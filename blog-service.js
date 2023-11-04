@@ -73,41 +73,44 @@ function getPublishedPosts() {
 }
 
 function getPostsByCategory(category) {
-  // Retrieve posts by a specific category
-  const postsByCategory = posts.filter((post) => post.category === category);
-  if (postsByCategory.length === 0) {
-    return Promise.reject("No results returned.");
-  }
-  return Promise.resolve(postsByCategory);
+  return new Promise((resolve, reject) => {
+    let postsInCategory = posts.filter((post) => post.category == category);
+    if (postsInCategory.length > 0) {
+      resolve(postsInCategory);
+    } else {
+      reject("No posts in that category");
+    }
+  });
 }
 
 function getPostsByMinDate(minDateStr) {
-  // Retrieve posts by a minimum date
-  const postsByMinDate = posts.filter(
-    (post) => new Date(post.postDate) >= new Date(minDateStr)
-  );
-  if (postsByMinDate.length === 0) {
-    return Promise.reject("No results returned.");
-  }
-  return Promise.resolve(postsByMinDate);
+  return new Promise((resolve, reject) => {
+    let postsPastDate = posts.filter(
+      (post) => new Date(post.postDate) >= new Date(minDateStr)
+    );
+    if (postsPastDate.length > 0) {
+      resolve(postsPastDate);
+    } else {
+      reject(`No posts past ${minDateStr}`);
+    }
+  });
 }
 
 function getPostById(id) {
-  // Retrieve a post by its ID
-  const post = posts.find((post) => post.id === id);
-  if (!post) {
-    return Promise.reject("No result returned.");
-  }
-  return Promise.resolve(post);
+  return new Promise((resolve, reject) => {
+    const post = posts.find((post) => post.id == id);
+    if (post) resolve(post);
+    else reject(`No post found with id: ${id}`);
+  });
 }
 
 // Function to get all categories
-function getAllCategories() {
+function getCategories() {
   return new Promise((resolve, reject) => {
-    if (categories.length === 0) {
-      reject("No categories found");
-    } else {
+    if (categories.length > 0) {
       resolve(categories);
+    } else {
+      reject("No categories returned");
     }
   });
 }
@@ -123,17 +126,14 @@ const addPost = (postData) => {
 
 async function getPublishedPostsByCategory(category) {
   return new Promise((resolve, reject) => {
-    db.query(
-      "SELECT * FROM posts WHERE published = 1 AND category = ?",
-      [category],
-      (err, results) => {
-        if (err) {
-          reject(err); // Reject the promise on error
-        } else {
-          resolve(results); // Resolve the promise with the results
-        }
-      }
+    let publishedPosts = posts.filter(
+      (post) => (post.published == true) & (post.category == category)
     );
+    if (publishedPosts.length > 0) {
+      resolve(publishedPosts);
+    } else {
+      reject("No published posts in that category returned");
+    }
   });
 }
 
@@ -145,7 +145,7 @@ module.exports = {
   getPostsByCategory,
   getPostsByMinDate,
   getPostById,
-  getAllCategories,
+  getCategories,
   addPost,
   getPublishedPostsByCategory,
 };
