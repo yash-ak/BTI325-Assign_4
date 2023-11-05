@@ -26,14 +26,10 @@ const port = process.env.PORT || 8080;
 
 // configuring express-handlebars as hbs
 app.engine(
-  ".hbs",
-  exphbs.create({
+  "hbs",
+  exphbs.engine({
     extname: ".hbs",
-    defaultLayout: "main",
     helpers: {
-      safeHTML: function (context) {
-        return new Handlebars.SafeString(stripJs(context));
-      },
       navLink: function (url, options) {
         return (
           "<li" +
@@ -45,21 +41,22 @@ app.engine(
           "</a></li>"
         );
       },
-      // Custom helper for equality comparison
       equal: function (lvalue, rvalue, options) {
         if (arguments.length < 3)
           throw new Error("Handlebars Helper equal needs 2 parameters");
-        if (lvalue == rvalue) {
-          return options.fn(this);
-        } else {
+        if (lvalue != rvalue) {
           return options.inverse(this);
+        } else {
+          return options.fn(this);
         }
       },
+      safeHTML: function (context) {
+        return stripJs(context);
+      },
     },
-  }).engine
+  })
 );
-
-app.set("view engine", ".hbs");
+app.set("view engine", "hbs");
 
 // Serve static files from the 'public' folder
 app.use(express.static(path.join(__dirname, "public")));
@@ -179,24 +176,17 @@ app.get("/blog", async (req, res) => {
     viewData.posts = posts;
     viewData.post = post;
   } catch (err) {
-    console.error(err); // Log the error for debugging
-    viewData.message = "Error fetching posts"; // Handle the error
+    viewData.message = "no results";
   }
 
   try {
     // Obtain the full list of "categories"
-    let categories = await blogService.getAllCategories();
+    let categories = await blogService.getCategories();
 
-    if (!categories || categories.length === 0) {
-      // Handle the case where there are no categories available
-      viewData.categoriesMessage = "No categories available";
-    } else {
-      // store the "categories" data in the viewData object (to be passed to the view)
-      viewData.categories = categories;
-    }
+    // store the "categories" data in the viewData object (to be passed to the view)
+    viewData.categories = categories;
   } catch (err) {
-    console.error(err); // Log the error for debugging
-    viewData.categoriesMessage = "Error fetching categories"; // Handle the error
+    viewData.categoriesMessage = "no results";
   }
 
   // render the "blog" view with all of the data (viewData)
@@ -307,7 +297,7 @@ app.get("/post/:id", (req, res) => {
 
 app.get("/categories", (req, res) => {
   blogService
-    .getAllCategories()
+    .getCategories()
     .then((data) => {
       res.render("categories", { categories: data });
     })
